@@ -5,12 +5,11 @@ import { useAuth } from '../context/AuthContext';
 interface HeaderProps {
   currentPage: string;
   onNavigate: (page: string) => void;
-  user?: { name: string; waterDrops: number; avatar?: string };
 }
 
-export default function Header({ currentPage, onNavigate, user }: HeaderProps) {
+export default function Header({ currentPage, onNavigate }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { isAuthenticated, hasRole, logout } = useAuth();
+  const { user, isAuthenticated, hasRole, logout } = useAuth();
 
   const navigation = [
     { name: 'Home', id: 'home', icon: Home },
@@ -69,23 +68,13 @@ export default function Header({ currentPage, onNavigate, user }: HeaderProps) {
 
           {/* User Section */}
           <div className="flex items-center space-x-4">
-            {user ? (
+            {isAuthenticated && user ? (
               <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-1 bg-blue-50 px-3 py-1 rounded-full">
+                {/* Optionally show waterDrops if you have it in user */}
+                {/* <div className="flex items-center space-x-1 bg-blue-50 px-3 py-1 rounded-full">
                   <Droplets className="h-4 w-4 text-blue-500" />
                   <span className="text-sm font-semibold text-blue-700">{user.waterDrops}</span>
-                </div>
-                {isAuthenticated && (
-                  <button
-                    onClick={() => onNavigate('admin')}
-                    className={`hidden md:flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors ${
-                      hasRole('admin') ? 'text-emerald-700 hover:bg-emerald-50' : 'hidden'
-                    }`}
-                  >
-                    <ShieldCheck className="h-4 w-4" />
-                    <span className="text-sm font-medium">Admin</span>
-                  </button>
-                )}
+                </div> */}
                 <button 
                   onClick={() => onNavigate('dashboard')}
                   className="flex items-center space-x-2 bg-gray-50 hover:bg-gray-100 px-3 py-2 rounded-lg transition-colors"
@@ -97,15 +86,13 @@ export default function Header({ currentPage, onNavigate, user }: HeaderProps) {
                   )}
                   <span className="text-sm font-medium text-gray-700 hidden sm:block">{user.name}</span>
                 </button>
-                {isAuthenticated && (
-                  <button
-                    onClick={() => { logout(); onNavigate('home'); }}
-                    className="flex items-center space-x-1 text-gray-500 hover:text-red-600"
-                    title="Logout"
-                  >
-                    <LogOut className="h-5 w-5" />
-                  </button>
-                )}
+                <button
+                  onClick={() => { logout(); onNavigate('home'); }}
+                  className="flex items-center space-x-1 text-gray-500 hover:text-red-600"
+                  title="Logout"
+                >
+                  <LogOut className="h-5 w-5" />
+                </button>
               </div>
             ) : (
               <button 
