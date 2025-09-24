@@ -16,7 +16,8 @@ export default function Header({ currentPage, onNavigate }: HeaderProps) {
     { name: 'Learning Hub', id: 'learning', icon: BookOpen },
     { name: 'My Garden', id: 'garden', icon: TreePine },
     { name: 'Leaderboard', id: 'leaderboard', icon: Trophy },
-    { name: 'Community', id: 'community', icon: Users },
+    // Community tab only for logged-in users
+    ...(isAuthenticated ? [{ name: 'Community', id: 'community', icon: Users }] : []),
     { name: 'About', id: 'about', icon: Info },
   ];
 

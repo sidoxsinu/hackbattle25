@@ -5,10 +5,17 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import http from 'http';
+import { Server } from 'socket.io';
+import communityRoutes from './routes/community.js';
+import { authRequired, requireRole } from './middleware/auth.js';
 
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: 'http://localhost:5173', credentials: true } });
+app.set('io', io);
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
@@ -36,25 +43,6 @@ function signToken(payload) {
   return jwt.sign(payload, jwtSecret, { expiresIn: '7d' });
 }
 
-function authRequired(req, res, next) {
-  const token = req.cookies?.token;
-  if (!token) return res.status(401).json({ message: 'Unauthorized' });
-  try {
-    const decoded = jwt.verify(token, jwtSecret);
-    req.user = decoded;
-    next();
-  } catch (e) {
-    return res.status(401).json({ message: 'Invalid token' });
-  }
-}
-
-function requireRole(role) {
-  return (req, res, next) => {
-    if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
-    if (req.user.role !== role) return res.status(403).json({ message: 'Forbidden' });
-    next();
-  };
-}
 
 app.post('/api/auth/register', async (req, res) => {
   try {
@@ -120,5 +108,8 @@ app.get('/api/admin/ping', authRequired, requireRole('admin'), (req, res) => {
   res.json({ message: 'pong', role: 'admin' });
 });
 
+// Community routes (real-time)
+app.use('/api/community', communityRoutes);
+
 const port = process.env.PORT || 4000;
-app.listen(port, () => console.log(`API listening on http://localhost:${port}`));
+server.listen(port, () => console.log(`API listening on http://localhost:${port}`));

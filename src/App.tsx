@@ -4,7 +4,7 @@ import Hero from './components/Hero';
 import LearningHub from './components/LearningHub';
 import Garden from './components/Garden';
 import Leaderboard from './components/Leaderboard';
-import Community from './components/Community';
+import Community from './pages/Community';
 import Dashboard from './components/Dashboard';
 import About from './components/About';
 import Auth from './components/Auth';
@@ -234,14 +234,7 @@ function App() {
           />
         );
       case 'community':
-        return (
-          <Community 
-            posts={mockCommunityPosts}
-            currentUser={undefined}
-            onLikePost={handleLikePost}
-            onCreatePost={handleCreatePost}
-          />
-        );
+        return <Community />;
       case 'dashboard':
         return isAuthenticated ? (
           <Dashboard 
