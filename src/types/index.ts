@@ -7,6 +7,7 @@ export interface User {
   level: number;
   joinedAt: Date;
   garden: Tree[];
+  role: 'user' | 'admin';
 }
 
 export interface Challenge {

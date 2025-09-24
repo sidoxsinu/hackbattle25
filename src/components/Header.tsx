@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Menu, X, Droplets, TreePine, User, Home, BookOpen, Trophy, Users, Info, ShieldCheck, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -70,11 +70,11 @@ export default function Header({ currentPage, onNavigate }: HeaderProps) {
           <div className="flex items-center space-x-4">
             {isAuthenticated && user ? (
               <div className="flex items-center space-x-3">
-                {/* Optionally show waterDrops if you have it in user */}
-                {/* <div className="flex items-center space-x-1 bg-blue-50 px-3 py-1 rounded-full">
+                <div className="flex items-center space-x-1 bg-blue-50 px-3 py-1 rounded-full">
                   <Droplets className="h-4 w-4 text-blue-500" />
                   <span className="text-sm font-semibold text-blue-700">{user.waterDrops}</span>
-                </div> */}
+                </div>
+                {/* Only show Admin button in the main nav for admin users, not in user section */}
                 <button 
                   onClick={() => onNavigate('dashboard')}
                   className="flex items-center space-x-2 bg-gray-50 hover:bg-gray-100 px-3 py-2 rounded-lg transition-colors"

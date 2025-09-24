@@ -1,22 +1,30 @@
-import React from 'react';
-import { User, Challenge, Tree, LeaderboardEntry } from '../types';
+import { Challenge } from '../types';
 import { TreePine, Droplets, Trophy, TrendingUp, Calendar, Target, BookOpen, Users } from 'lucide-react';
 
+import { useAuth } from '../context/AuthContext';
+
 interface DashboardProps {
-  user: User;
   recentChallenges: Challenge[];
   onNavigate: (page: string) => void;
 }
 
-export default function Dashboard({ user, recentChallenges, onNavigate }: DashboardProps) {
+export default function Dashboard({ recentChallenges, onNavigate }: DashboardProps) {
+  const { user } = useAuth();
+  if (!user) return null;
   const completedChallenges = recentChallenges.filter(c => c.completed).length;
   const totalChallenges = recentChallenges.length;
   const completionRate = totalChallenges > 0 ? Math.round((completedChallenges / totalChallenges) * 100) : 0;
 
+  // Fallbacks for possibly undefined user fields
+  const waterDrops = user.waterDrops ?? 0;
+  const level = user.level ?? 0;
+  const garden = user.garden ?? [];
+  const joinedAt = user.joinedAt ? new Date(user.joinedAt) : null;
+
   const stats = [
-    { label: 'Water Drops', value: user.waterDrops, icon: Droplets, color: 'blue' },
-    { label: 'Level', value: user.level, icon: Trophy, color: 'purple' },
-    { label: 'Trees Grown', value: user.garden.length, icon: TreePine, color: 'green' },
+    { label: 'Water Drops', value: waterDrops, icon: Droplets, color: 'blue' },
+    { label: 'Level', value: level, icon: Trophy, color: 'purple' },
+    { label: 'Trees Grown', value: garden.length, icon: TreePine, color: 'green' },
     { label: 'Completion Rate', value: `${completionRate}%`, icon: Target, color: 'orange' }
   ];
 
@@ -138,7 +146,7 @@ export default function Dashboard({ user, recentChallenges, onNavigate }: Dashbo
         </div>
 
         {/* Garden Preview */}
-        {user.garden.length > 0 && (
+        {garden.length > 0 && (
           <div className="mt-12 bg-white rounded-2xl shadow-lg p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Your Growing Garden</h2>
@@ -149,9 +157,8 @@ export default function Dashboard({ user, recentChallenges, onNavigate }: Dashbo
                 View Full Garden →
               </button>
             </div>
-            
             <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
-              {user.garden.slice(0, 8).map((tree) => (
+              {garden.slice(0, 8).map((tree) => (
                 <div key={tree.id} className="text-center">
                   <div className="bg-green-50 p-4 rounded-xl mb-2">
                     <TreePine className="h-8 w-8 text-green-600 mx-auto" />
@@ -167,7 +174,7 @@ export default function Dashboard({ user, recentChallenges, onNavigate }: Dashbo
         <div className="mt-8 text-center">
           <div className="inline-flex items-center space-x-2 text-gray-500">
             <Calendar className="h-4 w-4" />
-            <span>Member since {user.joinedAt.toLocaleDateString()}</span>
+            <span>Member since {joinedAt ? joinedAt.toLocaleDateString() : 'Unknown'}</span>
           </div>
         </div>
       </div>
