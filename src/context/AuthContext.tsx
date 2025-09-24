@@ -5,14 +5,18 @@ interface User {
   name: string;
   email: string;
   avatar?: string;
+  role: 'user' | 'admin';
 }
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+  hasRole: (role: User['role']) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,44 +31,81 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check for existing user session
-    const savedUser = localStorage.getItem('codeburry_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
+    // Attempt to load session from API
+    (async () => {
+      try {
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+        }
+      } catch (e) {
+        // ignore
+      } finally {
+        setIsLoading(false);
+      }
+    })();
   }, []);
 
   const login = async (email: string, password: string) => {
-    // Simulate API call
-    const mockUser = {
-      id: '1',
-      name: 'Demo User',
-      email,
-      avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop'
-    };
-    
-    setUser(mockUser);
-    localStorage.setItem('codeburry_user', JSON.stringify(mockUser));
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password })
+      });
+      if (!res.ok) {
+        const msg = (await res.json())?.message || 'Login failed';
+        throw new Error(msg);
+      }
+      const data = await res.json();
+      setUser(data.user);
+    } catch (e: any) {
+      setError(e?.message || 'Login failed');
+      throw e;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const register = async (name: string, email: string, password: string) => {
-    // Simulate API call
-    const mockUser = {
-      id: '1',
-      name,
-      email,
-      avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop'
-    };
-    
-    setUser(mockUser);
-    localStorage.setItem('codeburry_user', JSON.stringify(mockUser));
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name, email, password })
+      });
+      if (!res.ok) {
+        const msg = (await res.json())?.message || 'Registration failed';
+        throw new Error(msg);
+      }
+      const data = await res.json();
+      setUser(data.user);
+    } catch (e: any) {
+      setError(e?.message || 'Registration failed');
+      throw e;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     setUser(null);
-    localStorage.removeItem('codeburry_user');
+  };
+
+  const hasRole = (role: User['role']) => {
+    return !!user && user.role === role;
   };
 
   return (
@@ -73,7 +114,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       login,
       register,
       logout,
-      isAuthenticated: !!user
+      isAuthenticated: !!user,
+      isLoading,
+      error,
+      hasRole
     }}>
       {children}
     </AuthContext.Provider>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import LearningHub from './components/LearningHub';
@@ -9,10 +9,19 @@ import Dashboard from './components/Dashboard';
 import About from './components/About';
 import Auth from './components/Auth';
 import { User, Challenge, Tree, LeaderboardEntry, CommunityPost } from './types';
+import { useAuth } from './context/AuthContext';
+import RequireRole from './components/auth/RequireRole';
+import AdminPanel from './pages/AdminPanel';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<string>('home');
-  const [currentUser, setCurrentUser] = useState<User | undefined>();
+  const { user: authUser, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated && (currentPage === 'auth' || currentPage === 'home')) {
+      setCurrentPage('dashboard');
+    }
+  }, [isAuthenticated]);
 
   // Mock data - in a real app, this would come from a backend/database
   const mockChallenges: Challenge[] = [
@@ -143,29 +152,6 @@ function App() {
     }
   ];
 
-  const handleLogin = (email: string, password: string) => {
-    // Mock authentication - in a real app, this would call an API
-    console.log('Login attempt:', { email, password });
-    setCurrentUser(mockUser);
-    setCurrentPage('dashboard');
-  };
-
-  const handleSignUp = (name: string, email: string, password: string) => {
-    // Mock registration - in a real app, this would call an API
-    console.log('Signup attempt:', { name, email, password });
-    const newUser: User = {
-      id: 'new-user',
-      name,
-      email,
-      waterDrops: 0,
-      level: 1,
-      joinedAt: new Date(),
-      garden: []
-    };
-    setCurrentUser(newUser);
-    setCurrentPage('dashboard');
-  };
-
   const handleStartChallenge = (challenge: Challenge) => {
     // Mock challenge start - in a real app, this would update the backend
     console.log('Starting challenge:', challenge.title);
@@ -174,38 +160,30 @@ function App() {
   };
 
   const handleWaterTree = (treeId: string) => {
-    if (currentUser) {
-      const tree = currentUser.garden.find(t => t.id === treeId);
-      if (tree && currentUser.waterDrops >= 25) {
-        // Mock tree watering - in a real app, this would update the backend
-        console.log('Watering tree:', treeId);
-        alert(`🌱 Tree watered! Your ${tree.name} is growing stronger.`);
-      }
+    // Keeping demo interactions unchanged
+    const tree = mockTrees.find(t => t.id === treeId);
+    if (tree) {
+      alert(`🌱 Tree watered! Your ${tree.name} is growing stronger.`);
     }
   };
 
   const handlePlantNewTree = () => {
-    console.log('Planting new tree');
     alert('🌱 Complete more challenges to plant new trees in your garden!');
   };
 
   const handleLikePost = (postId: string) => {
     console.log('Liking post:', postId);
-    // In a real app, this would update the backend
   };
 
   const handleCreatePost = (content: string, achievement?: string) => {
     console.log('Creating post:', { content, achievement });
-    // In a real app, this would call the backend API
     alert('Post created! Your learning journey has been shared with the community. 🌟');
   };
 
   const handleNavigate = (page: string) => {
-    if (page === 'auth' && currentUser) {
-      // If user is already logged in, go to dashboard instead
+    if (page === 'auth' && isAuthenticated) {
       setCurrentPage('dashboard');
-    } else if ((page === 'dashboard' || page === 'garden') && !currentUser) {
-      // If trying to access protected pages without auth, redirect to auth
+    } else if ((page === 'dashboard' || page === 'garden' || page === 'admin') && !isAuthenticated) {
       setCurrentPage('auth');
     } else {
       setCurrentPage(page);
@@ -213,15 +191,11 @@ function App() {
   };
 
   const handleGetStarted = () => {
-    if (currentUser) {
+    if (isAuthenticated) {
       setCurrentPage('learning');
     } else {
       setCurrentPage('auth');
     }
-  };
-
-  const handleWatchDemo = () => {
-    alert('🎥 Demo video would play here! For now, explore the platform to see CodeBurry in action.');
   };
 
   const renderCurrentPage = () => {
@@ -230,7 +204,7 @@ function App() {
         return (
           <Hero 
             onGetStarted={handleGetStarted}
-            onWatchDemo={handleWatchDemo}
+            onWatchDemo={() => alert('🎥 Demo video would play here! For now, explore the platform to see CodeBurry in action.')}
           />
         );
       case 'learning':
@@ -240,17 +214,15 @@ function App() {
           />
         );
       case 'garden':
-        return currentUser ? (
+        return isAuthenticated ? (
           <Garden 
-            trees={currentUser.garden}
-            waterDrops={currentUser.waterDrops}
+            trees={mockTrees}
+            waterDrops={275}
             onWaterTree={handleWaterTree}
             onPlantNewTree={handlePlantNewTree}
           />
         ) : (
           <Auth 
-            onLogin={handleLogin}
-            onSignUp={handleSignUp}
             onBack={() => setCurrentPage('home')}
           />
         );
@@ -258,31 +230,37 @@ function App() {
         return (
           <Leaderboard 
             entries={mockLeaderboard}
-            currentUserId={currentUser?.id}
+            currentUserId={authUser?.id}
           />
         );
       case 'community':
         return (
           <Community 
             posts={mockCommunityPosts}
-            currentUser={currentUser}
+            currentUser={undefined}
             onLikePost={handleLikePost}
             onCreatePost={handleCreatePost}
           />
         );
       case 'dashboard':
-        return currentUser ? (
+        return isAuthenticated ? (
           <Dashboard 
-            user={currentUser}
+            user={mockUser}
             recentChallenges={mockChallenges}
             onNavigate={handleNavigate}
           />
         ) : (
           <Auth 
-            onLogin={handleLogin}
-            onSignUp={handleSignUp}
             onBack={() => setCurrentPage('home')}
           />
+        );
+      case 'admin':
+        return isAuthenticated ? (
+          <RequireRole role="admin">
+            <AdminPanel />
+          </RequireRole>
+        ) : (
+          <Auth onBack={() => setCurrentPage('home')} />
         );
       case 'about':
         return (
@@ -293,8 +271,6 @@ function App() {
       case 'auth':
         return (
           <Auth 
-            onLogin={handleLogin}
-            onSignUp={handleSignUp}
             onBack={() => setCurrentPage('home')}
           />
         );
@@ -302,7 +278,7 @@ function App() {
         return (
           <Hero 
             onGetStarted={handleGetStarted}
-            onWatchDemo={handleWatchDemo}
+            onWatchDemo={() => alert('🎥 Demo video would play here! For now, explore the platform to see CodeBurry in action.')}
           />
         );
     }
@@ -314,7 +290,7 @@ function App() {
         <Header 
           currentPage={currentPage}
           onNavigate={handleNavigate}
-          user={currentUser}
+          user={isAuthenticated ? mockUser : undefined}
         />
       )}
       {renderCurrentPage()}

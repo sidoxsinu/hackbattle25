@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+  import React, { useState } from 'react';
 import { TreePine, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface AuthProps {
-  onLogin: (email: string, password: string) => void;
-  onSignUp: (name: string, email: string, password: string) => void;
+  onLogin?: (email: string, password: string) => Promise<void> | void;
+  onSignUp?: (name: string, email: string, password: string) => Promise<void> | void;
   onBack: () => void;
 }
 
 export default function Auth({ onLogin, onSignUp, onBack }: AuthProps) {
+  const { login, register, isLoading, error } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -16,8 +18,9 @@ export default function Auth({ onLogin, onSignUp, onBack }: AuthProps) {
     password: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: Record<string, string> = {};
 
@@ -41,10 +44,23 @@ export default function Auth({ onLogin, onSignUp, onBack }: AuthProps) {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      if (isLogin) {
-        onLogin(formData.email, formData.password);
-      } else {
-        onSignUp(formData.name, formData.email, formData.password);
+      setSubmitError(null);
+      try {
+        if (isLogin) {
+          if (onLogin) {
+            await onLogin(formData.email, formData.password);
+          } else {
+            await login(formData.email, formData.password);
+          }
+        } else {
+          if (onSignUp) {
+            await onSignUp(formData.name, formData.email, formData.password);
+          } else {
+            await register(formData.name, formData.email, formData.password);
+          }
+        }
+      } catch (e: any) {
+        setSubmitError(e?.message || 'Something went wrong. Please try again.');
       }
     }
   };
@@ -86,6 +102,12 @@ export default function Auth({ onLogin, onSignUp, onBack }: AuthProps) {
 
         {/* Form */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
+          {(error || submitError) && (
+            <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
+              {submitError || error}
+            </div>
+          )}
+
           <form className="space-y-6" onSubmit={handleSubmit}>
             {!isLogin && (
               <div>
@@ -168,16 +190,18 @@ export default function Auth({ onLogin, onSignUp, onBack }: AuthProps) {
 
             <button
               type="submit"
-              className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors duration-200 transform hover:scale-[1.02]"
+              disabled={isLoading}
+              className={`w-full ${isLoading ? 'bg-green-400' : 'bg-green-600 hover:bg-green-700'} text-white py-3 px-4 rounded-lg font-semibold transition-colors duration-200 transform ${isLoading ? '' : 'hover:scale-[1.02]'}`}
             >
-              {isLogin ? 'Sign In to Your Garden' : 'Plant Your First Seed'}
+              {isLoading ? (isLogin ? 'Signing In…' : 'Creating Account…') : (isLogin ? 'Sign In to Your Garden' : 'Plant Your First Seed')}
             </button>
           </form>
 
           <div className="mt-6 text-center">
             <button
               onClick={() => setIsLogin(!isLogin)}
-              className="text-green-600 hover:text-green-700 font-medium transition-colors"
+              disabled={isLoading}
+              className="text-green-600 hover:text-green-700 font-medium transition-colors disabled:opacity-50"
             >
               {isLogin 
                 ? "New to CodeBurry? Start growing →" 

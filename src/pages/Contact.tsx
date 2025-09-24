@@ -40,13 +40,13 @@ const Contact = () => {
     {
       icon: MapPinIcon,
       title: 'Visit Us',
-      detail: 'San Francisco, CA',
+      detail: 'Kochi, Kerala, India',
       description: 'Our headquarters in the heart of tech innovation'
     },
     {
       icon: PhoneIcon,
       title: 'Call Us',
-      detail: '+1 (555) 123-4567',
+      detail: '+91 8848859106',
       description: 'Speak directly with our team'
     }
   ];
